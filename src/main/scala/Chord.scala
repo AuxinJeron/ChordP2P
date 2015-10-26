@@ -11,7 +11,8 @@ import akka.util.Timeout
 import scala.concurrent.duration.Duration
 
 case class InsertNodes(nodesNum: Int, requestsNum: Int)
-case class NodeEnd(nodeRef: ActorRef, nodeIp: String, nodeId: BigInt)
+case class InvokeNodes()
+case class NodeEnd(nodeRef: ActorRef, nodeIp: String, nodeId: BigInt, averageHops: Double)
 
 object Chord {
   def main (args: Array[String]): Unit = {
@@ -31,15 +32,21 @@ class Manager extends Actor {
   var endNodes = 0
   var timeout: Timeout = new Timeout(Duration.create(5000, "milliseconds"))
   val log = Logging(context.system, this)
+  var requestsNum = 0
+  var averageHops: Double = 0
 
   def insertNodes(nodesNum: Int, requestsNum: Int) = {
+    println("=========================================================")
+    println("begin to insert nodes")
+    println("=========================================================")
+    this.requestsNum = requestsNum
     for (i <- 0 until nodesNum) {
-      val ipAddress = String.format("node" + i)
+      val ipAddress = String.format("node" + i.toString)
       log.info(s"create $ipAddress")
       nodes += 1
       val node = context.actorOf(Props(new Node(ipAddress, requestsNum)), name = ipAddress)
       if (i != 0) {
-        val helpNodeIp = String.format("node" + Random.nextInt() % i)
+        val helpNodeIp = String.format("node" + (Random.nextInt() % i).abs)
         log.info(s"helpNodeIp is $helpNodeIp")
         implicit val timeout = Timeout(Duration.create(2, "seconds"))
         val path = String.format(s"/user/Manager/$helpNodeIp")
@@ -51,14 +58,33 @@ class Manager extends Actor {
         node ! Join(node)
       }
     }
+
+    println("=========================================================")
+    println("begin to send messages")
+    println("=========================================================")
+    context.system.scheduler.scheduleOnce(Duration.create(2, "seconds"), self, InvokeNodes())
+  }
+
+  def invokeNodes() = {
+    for (i <- 0 until nodes) {
+      val node = context.actorSelection("/user/Manager/node" + i)
+      val message = messageGenerater.randomMessage(20)
+      node ! SendMessage(message, this.requestsNum)
+    }
   }
 
   def receive = {
     case InsertNodes(nodesNum: Int, requestsNum: Int) =>
       this.insertNodes(nodesNum, requestsNum)
-    case NodeEnd(nodeRef: ActorRef, nodeIp: String, nodeId: BigInt) =>
-      endNodes += 1
-      if (endNodes == nodes) context.system.shutdown()
+    case NodeEnd(nodeRef: ActorRef, nodeIp: String, nodeId: BigInt, averageHops: Double) =>
+      this.averageHops = (this.averageHops * this.endNodes + averageHops) / (this.endNodes + 1)
+      this.endNodes += 1
+      if (this.endNodes == nodes) {
+        println("the average num of hops is " + this.averageHops)
+        context.system.shutdown()
+      }
+    case InvokeNodes() =>
+      this.invokeNodes()
   }
 }
 

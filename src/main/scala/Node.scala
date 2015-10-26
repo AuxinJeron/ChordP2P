@@ -36,6 +36,7 @@ class Node(ipAddress: String, requestsNum: Int) extends Actor {
   var successorId = identifier
   var predecessorRef: ActorRef = self
   var predecessorId = identifier
+  var averagehops: Double = 0
   val log = Logging(context.system, this)
 
   for (i <- 1 until fingerTable.length) {
@@ -71,27 +72,34 @@ class Node(ipAddress: String, requestsNum: Int) extends Actor {
     val start = this.identifier
     val end = this.successorId
     var id = reqNodeId - BigInt(2).pow(index - 1)
-    if (id < 0) id += BigInt(2).pow(hashManager.consistentM)
+    if (id < 0) {
+      id += BigInt(2).pow(hashManager.consistentM)
+    }
+
     if (end > start && (id <= start || id > end)) outRange = true
     if (end <= start && id <= start && id > end) outRange = true
+    log.info(s"the candidate identifier is $id start $start end $end outRange $outRange")
 
     if (outRange) {
       val nodeRef = this.closestPreFinger(id)
       nodeRef ! FindUpdateTrail(reqNode, reqNodeId, index, hopsNum + 1)
     }
     else {
+      log.info(s"predecessor of $id is " + this.identifier)
       self ! UpdateFingerTable(reqNode, reqNodeId, index)
     }
   }
 
-  def updateFingerTable(nodeRef:ActorRef, nodeId: BigInt, index: Int) = {
+  def updateFingerTable(nodeRef:ActorRef, nodeId: BigInt, index: Int): Unit = {
+    if (nodeRef == self) return // the node should not affect self
+
     var inRange = false
     val start = this.identifier
     val end = this.fingerTable(index).nodeId
     if (end > start && nodeId >= start && nodeId < end) inRange = true
     if (end <= start && (nodeId >= start || nodeId < end)) inRange = true
 
-    //log.info("start " + start + " end " + end + " nodeId " + nodeId + " with inRange " + inRange)
+    log.info("start " + start + " end " + end + " nodeId " + nodeId + " with inRange " + inRange)
     if (inRange) {
       this.fingerTable(index).nodeId = nodeId
       this.fingerTable(index).nodeRef = nodeRef
@@ -99,8 +107,6 @@ class Node(ipAddress: String, requestsNum: Int) extends Actor {
         this.successorId = nodeId
         this.successorRef = nodeRef
       }
-      if (this.ipAddress == "node0")
-        this.printFingerTable()
       this.predecessorRef ! UpdateFingerTable(nodeRef, nodeId, index)
     }
   }
@@ -164,8 +170,6 @@ class Node(ipAddress: String, requestsNum: Int) extends Actor {
           break()
         }
         if (i == hashManager.consistentM - 1) {
-          this.printFingerTable()
-          this.sendMessage("leon.li@ufl.edu", this.requestsNum)
           this.updateOthers()
         }
       }
@@ -173,13 +177,14 @@ class Node(ipAddress: String, requestsNum: Int) extends Actor {
   }
 
   def join(helpNode: ActorRef) = {
-    log.info(this.ipAddress + " " + this.identifier + " join with the helpNode " + helpNode)
+    println("insert " + this.ipAddress + " with the help of " + helpNode)
+    //log.info(this.ipAddress + " " + this.identifier + " join with the helpNode " + helpNode)
     if (helpNode != self) {
       this.initFingerTable(helpNode)
     }
     else {
-      this.printFingerTable()
-      this.sendMessage("leon.li@ufl.edu", this.requestsNum)
+      //this.printFingerTable()
+      //this.sendMessage("leon.li@ufl.edu", this.requestsNum)
     }
   }
 
@@ -223,7 +228,7 @@ class Node(ipAddress: String, requestsNum: Int) extends Actor {
       log.info(s"send message with identifier $identifier")
       self ! searchMessageId(self, identifier, 0)
       val newMessage = messageGenerater.randomMessage(20)
-      context.system.scheduler.scheduleOnce(Duration.create(1, "seconds"), self, SendMessage(newMessage, requestsNum - 1))
+      context.system.scheduler.scheduleOnce(Duration.create(10, "milliseconds"), self, SendMessage(newMessage, requestsNum - 1))
     }
   }
 
@@ -233,6 +238,8 @@ class Node(ipAddress: String, requestsNum: Int) extends Actor {
     val end = this.successorId
     if (end > start && (id <= start || id > end)) outRange = true
     if (end <= start && id <= start && id > end) outRange = true
+
+    log.info(s"search messageId $id start $start end $end")
 
     if (outRange) {
       val nodeRef = this.closestPreFinger(id)
@@ -244,15 +251,17 @@ class Node(ipAddress: String, requestsNum: Int) extends Actor {
   }
 
   def searchedMessageId(id: BigInt, successorId: BigInt, hopsNum: Int) = {
+    println(this.ipAddress + " used " + hopsNum + s" hops to search successorId $successorId for messageId " + id)
+    this.averagehops = (this.averagehops * sentMessages + hopsNum) / (sentMessages + 1)
     this.sentMessages += 1
-    log.info(this.ipAddress + " used " + hopsNum + " hops to search successor for message " + id)
     if (this.sentMessages == requestsNum) {
       log.info("ends")
-      context.system.actorSelection("/user/Manager") ! NodeEnd(self, this.ipAddress, this.identifier)
+      context.system.actorSelection("/user/Manager") ! NodeEnd(self, this.ipAddress, this.identifier, this.averagehops)
     }
   }
 
   def printFingerTable() = {
+    log.info(this.ipAddress + s" has predecessorId $predecessorId and successorId $successorId")
     for (i <- hashManager.consistentM to (1, -1)) {
       log.info(s"finger $i has node " + this.fingerTable(i).nodeId + " and start " + this.fingerTable(i).start)
     }
