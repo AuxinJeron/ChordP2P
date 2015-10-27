@@ -10,11 +10,7 @@ import scala.util.Random
 import akka.util.Timeout
 import scala.concurrent.duration.Duration
 
-case class InsertNodes(nodesNum: Int, requestsNum: Int)
-case class InvokeNodes()
-case class NodeEnd(nodeRef: ActorRef, nodeIp: String, nodeId: BigInt, averageHops: Double)
-
-object Chord {
+object ChordBonus {
   def main (args: Array[String]): Unit = {
 //    println("Hash Value is " + hashManager.getHashInt("leon.li@ufl.edu"))
     if (args.length != 2) {
@@ -27,7 +23,7 @@ object Chord {
   }
 }
 
-class Manager extends Actor {
+class ManagerBonus extends Actor {
   var nodes = 0
   var endNodes = 0
   var timeout: Timeout = new Timeout(Duration.create(5000, "milliseconds"))
@@ -44,7 +40,7 @@ class Manager extends Actor {
       val ipAddress = String.format("node" + i.toString)
       log.info(s"create $ipAddress")
       nodes += 1
-      val node = context.actorOf(Props(new NodeBonus(ipAddress, requestsNum)), name = ipAddress)
+      val node = context.actorOf(Props(new Node(ipAddress, requestsNum)), name = ipAddress)
       if (i != 0) {
         val helpNodeIp = String.format("node" + (Random.nextInt() % i).abs)
         log.info(s"helpNodeIp is $helpNodeIp")

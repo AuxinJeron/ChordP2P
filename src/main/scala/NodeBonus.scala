@@ -12,23 +12,7 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Random}
 import scala.util.control.Breaks._
 
-case class Join(helpNode: ActorRef)
-case class FindSuccessor(reqNode: ActorRef, id: BigInt, hopsNum: Int)
-case class FoundSuccessor(id: BigInt, successId: BigInt, hopsNum: Int)
-case class FindUpdateTrail(reqNode: ActorRef, reqNodeId: BigInt, index: Int, hopsNum: Int)
-case class UpdateFingerTable(nodeRef: ActorRef, nodeId: BigInt, index: Int)
-case class FindFinger(reqNode: ActorRef, helpNode: ActorRef, index: Int, id: BigInt, hopsNum: Int)
-case class FoundFinger(helpNode: ActorRef, index: Int, nodeRef: ActorRef, nodeId: BigInt, hopsNum: Int)
-case class GetPredecessor(reqNode: ActorRef)
-case class SetPredecessor(predecessorId: BigInt, predecessorRef: ActorRef)
-case class SendMessage(message: String, requestsNum: Int)
-case class SearchMessageId(reqNode: ActorRef, id: BigInt, hopsNum: Int)
-case class SearchedMessageId(id: BigInt, successorId: BigInt, hopsNum: Int)
-
-/**
- * Created by leon on 10/26/15.
- */
-class Node(ipAddress: String, requestsNum: Int) extends Actor {
+class NodeBonus(ipAddress: String, requestsNum: Int) extends Actor {
   val identifier: BigInt = hashManager.getHashInt(ipAddress) % (BigInt(2).pow(hashManager.consistentM))
   var sentMessages = 0
   var fingerTable: Array[Finger] = Array.fill[Finger](hashManager.consistentM + 1)(new Finger())
@@ -295,45 +279,3 @@ class Node(ipAddress: String, requestsNum: Int) extends Actor {
   }
 }
 
-class  Finger {
-  var start: BigInt = 0
-  var interval: ChordRange = new ChordRange(0, 0)
-  var nodeRef: ActorRef = null
-  var nodeId: BigInt = BigInt(0)
-}
-
-class ChordRange(start: BigInt, end: BigInt) {
-}
-
-object messageGenerater {
-  def randomMessage(length: Int): String = {
-    val message:Array[Byte] = new Array[Byte](length)
-    for (i <- message.indices) {
-      var v = 0
-      do {
-        v = Random.nextInt() % 127
-      } while (v < 33)
-      message(i) = v.toByte
-    }
-    return new String(message, "ascii")
-  }
-}
-
-object hashManager {
-  // consistentM can be modified to change the circle size
-  val consistentM: Int = 12
-  val slotsSize: BigInt = BigInt(2).pow(consistentM)
-  def getHashInt(value: String): BigInt = {
-    val msgDigest = MessageDigest.getInstance("SHA-1")
-    msgDigest.update(value.getBytes("ascii"))
-    BigInt.apply(msgDigest.digest()).abs
-  }
-  def getHashString(value: String): String = {
-    val msgDigest = MessageDigest.getInstance("SHA-1")
-    msgDigest.update(value.getBytes("ascii"))
-    msgDigest.digest().
-      foldLeft("")((s: String, b: Byte) => s +
-      Character.forDigit((b & 0xf0) >> 4, 16) +
-      Character.forDigit(b & 0x0f, 16))
-  }
-}
