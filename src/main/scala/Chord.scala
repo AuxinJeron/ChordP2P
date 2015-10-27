@@ -80,6 +80,7 @@ class Manager extends Actor {
       this.averageHops = (this.averageHops * this.endNodes + averageHops) / (this.endNodes + 1)
       this.endNodes += 1
       if (this.endNodes == nodes) {
+        println("=========================================================")
         println("the average num of hops is " + this.averageHops)
         context.system.shutdown()
       }

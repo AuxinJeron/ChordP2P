@@ -1,4 +1,4 @@
-[0m[[0minfo[0m] [0mRunning Chord 1000 1000[0m
+[0m[[0minfo[0m] [0mRunning Chord 4 3[0m
 [0m[[0mdebug[0m] [0mWaiting for threads to exit or System.exit to be called.[0m
 [0m[[0mdebug[0m] [0m  Classpath:[0m
 [0m[[0mdebug[0m] [0m	/Users/leon/Workspace/Scala/ChordP2P/target/scala-2.11/classes[0m
@@ -9,6 +9,12 @@
 [0m[[0mdebug[0m] [0m	/Users/leon/.ivy2/cache/io.netty/netty/bundles/netty-3.8.0.Final.jar[0m
 [0m[[0mdebug[0m] [0m	/Users/leon/.ivy2/cache/com.google.protobuf/protobuf-java/bundles/protobuf-java-2.5.0.jar[0m
 [0m[[0mdebug[0m] [0m	/Users/leon/.ivy2/cache/org.uncommons.maths/uncommons-maths/jars/uncommons-maths-1.2.2a.jar[0m
-[0m[[0mdebug[0m] [0mWaiting for thread run-main-6 to terminate.[0m
-[0m[[0mdebug[0m] [0m	Thread run-main-6 exited.[0m
-[0m[[0mdebug[0m] [0mWaiting for thread ChordSystem-akka.actor.default-dispatcher-4 to terminate.[0m
+[0m[[0mdebug[0m] [0mWaiting for thread run-main-5 to terminate.[0m
+[0m[[0mdebug[0m] [0m	Thread run-main-5 exited.[0m
+[0m[[0mdebug[0m] [0mWaiting for thread ChordSystem-akka.actor.default-dispatcher-3 to terminate.[0m
+[0m[[0mdebug[0m] [0m	Thread ChordSystem-akka.actor.default-dispatcher-3 exited.[0m
+[0m[[0mdebug[0m] [0mInterrupting remaining threads (should be all daemons).[0m
+[0m[[0mdebug[0m] [0mInterrupting thread ChordSystem-9[0m
+[0m[[0mdebug[0m] [0m	Interrupted ChordSystem-9[0m
+[0m[[0mdebug[0m] [0mSandboxed run complete..[0m
+[0m[[0mdebug[0m] [0mExited with code 0[0m
